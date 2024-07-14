@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  dbservice:
+    image: mysql
+    container_name: dbservice
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - lms-network
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - lms-network
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - lms-network
+
+  bookservice:
+    build: ./com.lms.books
+    container_name: bookservice
+    restart: always
+    environment:
+      MYSQL_HOST: dbservice
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_PORT: 3306
+      KAFKA_BROKER: kafka
+      KAFKA_PORT: 9092
+    ports:
+      - "9000:9000"
+    depends_on:
+      dbservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - lms-network
+
+  customerservice:
+    build: ./com.lms.customer
+    container_name: customerservice
+    restart: always
+    environment:
+      MYSQL_HOST: dbservice
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_PORT: 3306
+      KAFKA_BROKER: kafka
+      KAFKA_PORT: 9092
+    ports:
+      - "9001:9001"
+    depends_on:
+      dbservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - lms-network
+
+  borrowingservice:
+    build: ./com.lms.borrowing
+    container_name: borrowingservice
+    restart: always
+    environment:
+      MYSQL_HOST: dbservice
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_PORT: 3306
+      KAFKA_BROKER: kafka
+      KAFKA_PORT: 9092
+    ports:
+      - "9002:9002"
+    depends_on:
+      dbservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
