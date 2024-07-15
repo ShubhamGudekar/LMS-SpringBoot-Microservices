@@ -10,7 +10,7 @@ public interface IBorrowingService {
 
 	ResponseBorrowingDto addBorrowing(RequestBorrowingDto borrwingDto);
 
-	ResponseBorrowingDto closeBorrowing(RequestBorrowingDto borrowingDto);
+	ResponseBorrowingDto closeBorrowing(long borrowingId);
 
 	List<ResponseBooksBorrowingDto> getAllBorrowingByCustomerId(long customerId);
 

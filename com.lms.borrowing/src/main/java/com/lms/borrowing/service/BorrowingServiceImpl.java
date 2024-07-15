@@ -14,6 +14,8 @@ import com.lms.borrowing.dto.ResponseBorrowingDto;
 import com.lms.borrowing.entities.Book;
 import com.lms.borrowing.entities.Borrowing;
 import com.lms.borrowing.entities.Customer;
+import com.lms.borrowing.kafka.BookEvent;
+import com.lms.borrowing.kafka.BorrowingProducer;
 import com.lms.borrowing.repo.IBookRepo;
 import com.lms.borrowing.repo.IBorrowingRepo;
 import com.lms.borrowing.repo.ICustomerRepo;
@@ -29,6 +31,7 @@ public class BorrowingServiceImpl implements IBorrowingService {
 	IBorrowingRepo borrowingRepo;
 	IBookRepo bookRepo;
 	ICustomerRepo customerRepo;
+	BorrowingProducer borrowingProducer;
 
 	@Override
 	public ResponseBorrowingDto addBorrowing(RequestBorrowingDto borrowingDto) {
@@ -59,17 +62,35 @@ public class BorrowingServiceImpl implements IBorrowingService {
 		Borrowing newBorrowing = new Borrowing(book, customer, LocalDateTime.now());
 		newBorrowing = borrowingRepo.save(newBorrowing);
 
+		// Reduce Count of Book
+		book.setQuantity(book.getQuantity() - 1);
+		bookRepo.save(book);
+
+		// Send borrow closed event
+		borrowingProducer.sendMessage(new BookEvent("BorrowAdded", book));
 		return new ResponseBorrowingDto(newBorrowing.getId(),
 				new BookDto(newBorrowing.getBook().getName(), newBorrowing.getBook().getDescription()),
 				newBorrowing.getCustomer(), newBorrowing.getBorrowedDate());
 	}
 
 	@Override
-	public ResponseBorrowingDto closeBorrowing(RequestBorrowingDto borrowingDto) {
-		Borrowing borrowing = borrowingRepo.findById(borrowingDto.getId()).orElseThrow(
-				() -> new RuntimeException("Borrowing not registered for id '" + borrowingDto.getId() + "'"));
+	public ResponseBorrowingDto closeBorrowing(long borrowingId) {
+
+		// Find borrowing
+		Borrowing borrowing = borrowingRepo.findById(borrowingId)
+				.orElseThrow(() -> new RuntimeException("Borrowing not registered for id '" + borrowingId + "'"));
+
+		// Set Return Date
 		borrowing.setReturnedDate(LocalDateTime.now());
 		borrowing = borrowingRepo.save(borrowing);
+
+		// Update Book Count
+		Book book = borrowing.getBook();
+		book.setQuantity(book.getQuantity() + 1);
+		bookRepo.save(book);
+
+		// Send Borrow Closed event
+		borrowingProducer.sendMessage(new BookEvent("BorrowClosed", book));
 
 		return new ResponseBorrowingDto(borrowing.getId(),
 				new BookDto(borrowing.getBook().getName(), borrowing.getBook().getDescription()),

@@ -54,8 +54,8 @@ This system is designed around Kafka to enable:
 
 Once the services are up and running, you can access them via the following URLs:
 
-- Book Service: `http://localhost:9000`
-- Customer Service: `http://localhost:9001`
-- Borrowing Service: `http://localhost:9002`
+- Book Service: `http://localhost:9000/swagger-ui/index.html#`
+- Customer Service: `http://localhost:9001/swagger-ui/index.html#`
+- Borrowing Service: `http://localhost:9002/swagger-ui/index.html#`
 
 
