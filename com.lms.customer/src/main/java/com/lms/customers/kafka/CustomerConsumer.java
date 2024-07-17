@@ -1,26 +1,36 @@
-package com.lms.books.kafka;
+package com.lms.customers.kafka;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import com.lms.books.entities.Book;
-import com.lms.books.entities.Borrowing;
-import com.lms.books.repo.IBookRepo;
-import com.lms.books.repo.IBorrowingRepo;
-import com.lms.books.repo.ICustomerRepo;
+import com.lms.customers.entities.Book;
+import com.lms.customers.entities.Borrowing;
+import com.lms.customers.repo.IBookRepo;
+import com.lms.customers.repo.IBorrowingRepo;
+import com.lms.customers.repo.ICustomerRepo;
 
 import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
-public class BookConsumer {
+public class CustomerConsumer {
 
 	IBookRepo bookRepo;
 	ICustomerRepo customerRepo;
 	IBorrowingRepo borrowingRepo;
 
-	final String groupId = "Book";
+	final String groupId = "Customer";
 
+	@KafkaListener(topics = "BookEvent", groupId = groupId)
+	public void consume(BookEvent event) {
+
+		if (event.getMessage().equals("BookRemoved")) {
+			bookRepo.delete(event.getBook());
+		} else {
+			bookRepo.save(event.getBook());
+		}
+	}
+	
 	@KafkaListener(topics = "BorrowEvent", groupId = groupId)
 	public void consume(BorrowEvent event) {
 
@@ -40,17 +50,7 @@ public class BookConsumer {
 
 		// Add/Update Borrow entry
 		Borrowing borrowing = new Borrowing(event.getBorrowId(), event.getBookId(), event.getCustomerId(),
-				event.getBorrowedDate(), event.getReturnedDate());
+				event.getReturnedDate(), event.getReturnedDate());
 		borrowingRepo.save(borrowing);
-	}
-
-	@KafkaListener(topics = "CustomerEvent", groupId = groupId)
-	public void consume(CustomerEvent event) {
-
-		if (event.getMessage().equals("CustomerRemoved")) {
-			customerRepo.delete(event.getCustomer());
-		} else {
-			customerRepo.save(event.getCustomer());
-		}
 	}
 }

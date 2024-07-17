@@ -14,7 +14,7 @@ import com.lms.borrowing.dto.ResponseBorrowingDto;
 import com.lms.borrowing.entities.Book;
 import com.lms.borrowing.entities.Borrowing;
 import com.lms.borrowing.entities.Customer;
-import com.lms.borrowing.kafka.BookEvent;
+import com.lms.borrowing.kafka.BorrowEvent;
 import com.lms.borrowing.kafka.BorrowingProducer;
 import com.lms.borrowing.repo.IBookRepo;
 import com.lms.borrowing.repo.IBorrowingRepo;
@@ -51,7 +51,7 @@ public class BorrowingServiceImpl implements IBorrowingService {
 
 		// Check if customer has borrowed same book
 		Optional<Borrowing> borrowing = customer.getBorrowings().stream()
-				.filter(b -> b.getBook().getId() == borrowingDto.getBookId()).findAny();
+				.filter(b -> b.getBook().getId() == borrowingDto.getBookId() && b.getReturnedDate() == null).findAny();
 
 		if (borrowing.isPresent()) {
 			throw new RuntimeException("Customer '" + customer.getFirstname() + "' has already borrowed book '"
@@ -67,7 +67,8 @@ public class BorrowingServiceImpl implements IBorrowingService {
 		bookRepo.save(book);
 
 		// Send borrow closed event
-		borrowingProducer.sendMessage(new BookEvent("BorrowAdded", book));
+		borrowingProducer.sendMessage(new BorrowEvent("BorrowAdded", newBorrowing.getId(), book.getId(),
+				customer.getId(), newBorrowing.getBorrowedDate(), newBorrowing.getReturnedDate()));
 		return new ResponseBorrowingDto(newBorrowing.getId(),
 				new BookDto(newBorrowing.getBook().getName(), newBorrowing.getBook().getDescription()),
 				newBorrowing.getCustomer(), newBorrowing.getBorrowedDate());
@@ -90,7 +91,8 @@ public class BorrowingServiceImpl implements IBorrowingService {
 		bookRepo.save(book);
 
 		// Send Borrow Closed event
-		borrowingProducer.sendMessage(new BookEvent("BorrowClosed", book));
+		borrowingProducer.sendMessage(new BorrowEvent("BorrowClosed", borrowingId, book.getId(),
+				borrowing.getCustomer().getId(), borrowing.getBorrowedDate(), borrowing.getReturnedDate()));
 
 		return new ResponseBorrowingDto(borrowing.getId(),
 				new BookDto(borrowing.getBook().getName(), borrowing.getBook().getDescription()),

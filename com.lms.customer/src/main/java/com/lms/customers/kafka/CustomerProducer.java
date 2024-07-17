@@ -15,9 +15,6 @@ public class CustomerProducer {
 
 	public void sendMessage(CustomerEvent event) {
 
-		System.out.println(event);
-
-		// create Message
 		Message<CustomerEvent> message = MessageBuilder.withPayload(event)
 				.setHeader(KafkaHeaders.TOPIC, "CustomerEvent").build();
 		kafkaTemplate.send(message);

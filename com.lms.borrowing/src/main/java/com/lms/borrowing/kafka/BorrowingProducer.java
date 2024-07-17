@@ -13,11 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 public class BorrowingProducer {
-	private KafkaTemplate<String, BookEvent> bookTemplate;	
+	private KafkaTemplate<String, BorrowEvent> bookTemplate;	
 	
-	public void sendMessage(BookEvent event) {
+	public void sendMessage(BorrowEvent event) {
 		log.info(event.toString());
-		Message<BookEvent> message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "BorrowEvent")
+		Message<BorrowEvent> message = MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "BorrowEvent")
 				.build();
 		bookTemplate.send(message);
 	}
