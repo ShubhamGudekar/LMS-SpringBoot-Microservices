@@ -50,7 +50,7 @@ public class CustomerConsumer {
 
 		// Add/Update Borrow entry
 		Borrowing borrowing = new Borrowing(event.getBorrowId(), event.getBookId(), event.getCustomerId(),
-				event.getReturnedDate(), event.getReturnedDate());
+				event.getBorrowedDate(), event.getReturnedDate());
 		borrowingRepo.save(borrowing);
 	}
 }

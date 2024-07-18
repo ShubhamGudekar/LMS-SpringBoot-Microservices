@@ -40,9 +40,9 @@ This system is designed around Kafka to enable:
     cd LMS-SpringBoot-Microservices
     ```
 
-2. Build the services:
+2. Build all the services but executing following command for every service:
     ```bash
-    mvn clean install
+    mvn clean package -DskipTests
     ```
 
 3. Start the services using Docker Compose:
