@@ -7,7 +7,6 @@ import com.lms.books.entities.Book;
 import com.lms.books.entities.Borrowing;
 import com.lms.books.repo.IBookRepo;
 import com.lms.books.repo.IBorrowingRepo;
-import com.lms.books.repo.ICustomerRepo;
 
 import lombok.AllArgsConstructor;
 
@@ -16,7 +15,6 @@ import lombok.AllArgsConstructor;
 public class BookConsumer {
 
 	IBookRepo bookRepo;
-	ICustomerRepo customerRepo;
 	IBorrowingRepo borrowingRepo;
 
 	final String groupId = "Book";
@@ -24,33 +22,38 @@ public class BookConsumer {
 	@KafkaListener(topics = "BorrowEvent", groupId = groupId)
 	public void consume(BorrowEvent event) {
 
-		Book book = bookRepo.findById(event.getBookId()).get();
-		if (event.getMessage().equals("BorrowAdded")) {
+		Book book = bookRepo.findById(event.getBookId())
+				.orElseThrow(() -> new RuntimeException("Book not found: " + event.getBookId()));
+
+		Borrowing borrowing;
+
+		if ("BorrowAdded".equals(event.getMessage())) {
 
 			// Update Book quantity
 			book.setQuantity(book.getQuantity() - 1);
-			bookRepo.save(book);
 
-		} else if (event.getMessage().equals("BorrowClosed")) {
+			// Create new borrow
+			borrowing = new Borrowing(event.getBorrowId(), event.getBookId(), event.getCustomerId(),
+					event.getCustomerFirstname(), event.getCustomerLastname(), event.getCustomerEmaild(),
+					event.getBorrowedDate());
+		} else if ("BorrowClosed".equals(event.getMessage())) {
 
 			// Update Book quantity
 			book.setQuantity(book.getQuantity() + 1);
-			bookRepo.save(book);
+
+			// Close existing borrow
+			borrowing = borrowingRepo.findById(event.getBorrowId())
+					.orElseThrow(() -> new RuntimeException("Unable to find borrowing with id " + event.getBorrowId()));
+			borrowing.setReturnedDate(event.getReturnedDate());
+		} else {
+			throw new IllegalArgumentException("Unsupported message type: " + event.getMessage());
 		}
 
+		// Save updated book information
+		bookRepo.save(book);
+
 		// Add/Update Borrow entry
-		Borrowing borrowing = new Borrowing(event.getBorrowId(), event.getBookId(), event.getCustomerId(),
-				event.getBorrowedDate(), event.getReturnedDate());
 		borrowingRepo.save(borrowing);
 	}
 
-	@KafkaListener(topics = "CustomerEvent", groupId = groupId)
-	public void consume(CustomerEvent event) {
-
-		if (event.getMessage().equals("CustomerRemoved")) {
-			customerRepo.delete(event.getCustomer());
-		} else {
-			customerRepo.save(event.getCustomer());
-		}
-	}
 }

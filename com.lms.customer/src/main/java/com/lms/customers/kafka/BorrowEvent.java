@@ -12,13 +12,21 @@ import lombok.NoArgsConstructor;
 public class BorrowEvent {
 
 	private String message;
-	
+
 	private long borrowId;
-	
+
 	private long bookId;
-	
+
+	private String bookName;
+
 	private long customerId;
-	
+
+	private String customerFirstname;
+
+	private String customerLastname;
+
+	private String customerEmaild;
+
 	private LocalDateTime borrowedDate;
 
 	private LocalDateTime returnedDate;

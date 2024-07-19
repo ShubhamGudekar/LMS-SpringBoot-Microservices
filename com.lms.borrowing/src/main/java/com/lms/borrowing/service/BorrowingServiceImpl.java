@@ -67,8 +67,9 @@ public class BorrowingServiceImpl implements IBorrowingService {
 		bookRepo.save(book);
 
 		// Send borrow closed event
-		borrowingProducer.sendMessage(new BorrowEvent("BorrowAdded", newBorrowing.getId(), book.getId(),
-				customer.getId(), newBorrowing.getBorrowedDate(), newBorrowing.getReturnedDate()));
+		borrowingProducer.sendMessage(new BorrowEvent("BorrowAdded", newBorrowing.getId(), book.getId(), book.getName(),
+				customer.getId(), customer.getFirstname(), customer.getLastname(), customer.getEmailId(),
+				newBorrowing.getBorrowedDate()));
 		return new ResponseBorrowingDto(newBorrowing.getId(),
 				new BookDto(newBorrowing.getBook().getName(), newBorrowing.getBook().getDescription()),
 				newBorrowing.getCustomer(), newBorrowing.getBorrowedDate());
@@ -91,8 +92,7 @@ public class BorrowingServiceImpl implements IBorrowingService {
 		bookRepo.save(book);
 
 		// Send Borrow Closed event
-		borrowingProducer.sendMessage(new BorrowEvent("BorrowClosed", borrowingId, book.getId(),
-				borrowing.getCustomer().getId(), borrowing.getBorrowedDate(), borrowing.getReturnedDate()));
+		borrowingProducer.sendMessage(new BorrowEvent("BorrowClosed", borrowingId, borrowing.getReturnedDate()));
 
 		return new ResponseBorrowingDto(borrowing.getId(),
 				new BookDto(borrowing.getBook().getName(), borrowing.getBook().getDescription()),

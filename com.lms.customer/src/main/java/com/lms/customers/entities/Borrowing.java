@@ -21,10 +21,21 @@ public class Borrowing {
 
 	private long bookId;
 
+	private String bookName;
+
 	private long customerId;
 
 	private LocalDateTime borrowedDate;
 
 	private LocalDateTime returnedDate;
+
+	public Borrowing(long id, long bookId, String bookName, long customerId, LocalDateTime borrowedDate) {
+		super();
+		this.id = id;
+		this.bookId = bookId;
+		this.bookName = bookName;
+		this.customerId = customerId;
+		this.borrowedDate = borrowedDate;
+	}
 
 }
